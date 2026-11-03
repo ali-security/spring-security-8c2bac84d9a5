@@ -17,6 +17,7 @@
 package org.springframework.security.core.authority.mapping;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -69,6 +70,28 @@ public class SimpleAuthoritiesMapperTests {
 		assertThat(mapped).hasSize(2);
 		assertThat(mapped).contains("AAA");
 		assertThat(mapped).contains("BBB");
+	}
+
+	@Test
+	public void caseIsConvertedCorrectlyWhenDefaultLocaleIsTurkish() {
+		Locale defaultLocale = Locale.getDefault();
+		Locale.setDefault(Locale.forLanguageTag("tr"));
+		try {
+			SimpleAuthorityMapper mapper = new SimpleAuthorityMapper();
+			mapper.setConvertToUpperCase(true);
+			Set<String> mapped = AuthorityUtils
+				.authorityListToSet(mapper.mapAuthorities(AuthorityUtils.createAuthorityList("admin")));
+			assertThat(mapped).containsExactly("ROLE_ADMIN");
+			mapper.setConvertToUpperCase(false);
+			mapper.setConvertToLowerCase(true);
+			mapper.setPrefix("");
+			mapped = AuthorityUtils
+				.authorityListToSet(mapper.mapAuthorities(AuthorityUtils.createAuthorityList("ADMIN")));
+			assertThat(mapped).containsExactly("admin");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 	@Test

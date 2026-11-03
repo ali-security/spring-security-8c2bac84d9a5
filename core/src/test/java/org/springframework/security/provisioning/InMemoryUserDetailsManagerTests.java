@@ -16,6 +16,7 @@
 
 package org.springframework.security.provisioning;
 
+import java.util.Locale;
 import java.util.Properties;
 
 import org.junit.jupiter.api.Test;
@@ -84,6 +85,46 @@ public class InMemoryUserDetailsManagerTests {
 		properties.setProperty("joe", "{noop}joespassword");
 		assertThatIllegalArgumentException().isThrownBy(() -> new InMemoryUserDetailsManager(properties))
 			.withMessage("The entry with username 'joe' could not be converted to an UserDetails");
+	}
+
+	@Test
+	public void usernameLookupsWhenDifferentCaseAndDefaultLocaleIsTurkishThenCaseInsensitive() {
+		Locale defaultLocale = Locale.getDefault();
+		Locale.setDefault(Locale.forLanguageTag("tr"));
+		try {
+			UserDetails admin = PasswordEncodedUser.admin();
+			InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager(admin);
+			assertThat(manager.userExists("ADMIN")).isTrue();
+			assertThat(manager.loadUserByUsername("ADMIN").getUsername()).isEqualTo("admin");
+			UserDetails adminUpperCase = User.withUserDetails(admin).username("ADMIN").build();
+			assertThatIllegalArgumentException().isThrownBy(() -> manager.createUser(adminUpperCase));
+			manager.updatePassword(adminUpperCase, "newPassword");
+			assertThat(manager.loadUserByUsername("admin").getPassword()).isEqualTo("newPassword");
+			manager.updateUser(User.withUserDetails(adminUpperCase).disabled(true).build());
+			assertThat(manager.loadUserByUsername("admin").isEnabled()).isFalse();
+			manager.deleteUser("ADMIN");
+			assertThat(manager.userExists("admin")).isFalse();
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
+	}
+
+	@Test
+	public void constructorWhenUserPropertiesWithDisabledKeywordAndDefaultLocaleIsTurkishThenUserDisabled() {
+		Locale defaultLocale = Locale.getDefault();
+		Locale.setDefault(Locale.forLanguageTag("tr"));
+		try {
+			Properties properties = new Properties();
+			properties.setProperty("joe", "{noop}joespassword,DISABLED,ROLE_A");
+			InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager(properties);
+			UserDetails joe = manager.loadUserByUsername("JOE");
+			assertThat(joe.isEnabled()).isFalse();
+			assertThat(joe.getAuthorities()).extracting("authority").containsExactly("ROLE_A");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 	@Test

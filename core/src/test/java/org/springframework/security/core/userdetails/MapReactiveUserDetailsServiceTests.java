@@ -19,6 +19,7 @@ package org.springframework.security.core.userdetails;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -63,6 +64,23 @@ public class MapReactiveUserDetailsServiceTests {
 	@Test
 	public void findByUsernameWhenDifferentCaseThenReturns() {
 		assertThat((this.users.findByUsername("uSeR").block())).isEqualTo(USER_DETAILS);
+	}
+
+	@Test
+	public void findByUsernameWhenDifferentCaseAndDefaultLocaleIsTurkishThenReturns() {
+		Locale defaultLocale = Locale.getDefault();
+		Locale.setDefault(Locale.forLanguageTag("tr"));
+		try {
+			UserDetails admin = User.withUsername("admin").password("password").roles("ADMIN").build();
+			MapReactiveUserDetailsService userDetailsService = new MapReactiveUserDetailsService(admin);
+			assertThat(userDetailsService.findByUsername("ADMIN").block()).isEqualTo(admin);
+			assertThat(userDetailsService.findByUsername("admin").block()).isEqualTo(admin);
+			userDetailsService.updatePassword(User.withUserDetails(admin).username("ADMIN").build(), "new").block();
+			assertThat(userDetailsService.findByUsername("admin").block().getPassword()).isEqualTo("new");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 	@Test

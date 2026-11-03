@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 
@@ -73,6 +74,38 @@ public class SimpleRoles2GrantedAuthoritiesMapperTests {
 		SimpleAttributes2GrantedAuthoritiesMapper mapper = getDefaultMapper();
 		mapper.setConvertAttributeToLowerCase(true);
 		testGetGrantedAuthorities(mapper, roles, expectedGas);
+	}
+
+	@Test
+	public final void testGetGrantedAuthoritiesToUpperCaseWhenDefaultLocaleIsTurkish() {
+		Locale defaultLocale = Locale.getDefault();
+		Locale.setDefault(Locale.forLanguageTag("tr"));
+		try {
+			String[] roles = { "admin", "Bill" };
+			String[] expectedGas = { "ADMIN", "BILL" };
+			SimpleAttributes2GrantedAuthoritiesMapper mapper = getDefaultMapper();
+			mapper.setConvertAttributeToUpperCase(true);
+			testGetGrantedAuthorities(mapper, roles, expectedGas);
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
+	}
+
+	@Test
+	public final void testGetGrantedAuthoritiesToLowerCaseWhenDefaultLocaleIsTurkish() {
+		Locale defaultLocale = Locale.getDefault();
+		Locale.setDefault(Locale.forLanguageTag("tr"));
+		try {
+			String[] roles = { "ADMIN", "BILL" };
+			String[] expectedGas = { "admin", "bill" };
+			SimpleAttributes2GrantedAuthoritiesMapper mapper = getDefaultMapper();
+			mapper.setConvertAttributeToLowerCase(true);
+			testGetGrantedAuthorities(mapper, roles, expectedGas);
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 	@Test
